@@ -1,0 +1,85 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  redis:
+    image: redis:6-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  tracking-api:
+    build:
+      context: ../tracking-api
+    container_name: tracking-api
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - kafka
+
+  analytics-processor:
+    build:
+      context: ../analytics-processor
+    container_name: analytics-processor
+    environment:
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_HOST=redis
+      - SESSION_TTL_MS=300000
+    depends_on:
+      - kafka
+      - redis
+
+  socket-broadcaster:
+    build:
+      context: ../socket-broadcaster
+    container_name: socket-broadcaster
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - KAFKA_BROKERS=kafka:9092
+    depends_on:
+      - kafka
+
+  frontend:
+    build:
+      context: ../frontend
+    container_name: frontend
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_SOCKET_URL=http://localhost:5000
+
+volumes:
+  kafka-data:
