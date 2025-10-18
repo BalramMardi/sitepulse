@@ -215,11 +215,11 @@ real-time-analytics/
 
 ### Simulating activity for 10 users.
 
-[▶️ Watch Demo1](assets/demo1.mp4)
+https://github.com/user-attachments/assets/fc5bd252-b8ad-41cd-8260-c5060ab120a8
 
 ### Side by side demo of the heatmap.
 
-[▶️ Watch Demo2](assets/sidebyside.mp4)
+https://github.com/user-attachments/assets/919ba955-299b-49cc-8d24-e8f08e5c36fd
 
 ### Dashboard
 
