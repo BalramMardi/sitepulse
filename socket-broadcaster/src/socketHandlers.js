@@ -10,7 +10,7 @@ async function createConsumer(kafka, topic, onMessage) {
   await consumer.run({
     eachMessage: async ({ message }) => {
       try {
-        onMessage(JSON.parse(message.value.toString()));
+        onMessage(JSON.parse(message.value.toString()), topic);
       } catch (e) {
         console.error(`Failed to process message from ${topic}`, e);
       }
@@ -19,14 +19,19 @@ async function createConsumer(kafka, topic, onMessage) {
   return consumer;
 }
 
-async function init(io, kafka) {
+async function init(io, kafka, metrics) {
+  // Accept metrics
   try {
-    await createConsumer(kafka, TOPIC_ANALYTICS, (data) => {
+    await createConsumer(kafka, TOPIC_ANALYTICS, (data, topic) => {
+      metrics.kafka_messages_consumed_total.inc({ topic });
+      metrics.socket_events_emitted_total.inc({ event: "analytics-update" });
       io.emit("analytics-update", data);
     });
     console.log("Consuming analytics topic");
 
-    await createConsumer(kafka, TOPIC_CLICKS, (data) => {
+    await createConsumer(kafka, TOPIC_CLICKS, (data, topic) => {
+      metrics.kafka_messages_consumed_total.inc({ topic });
+      metrics.socket_events_emitted_total.inc({ event: "new-click" });
       io.emit("new-click", data);
     });
     console.log("Consuming click-stream topic");

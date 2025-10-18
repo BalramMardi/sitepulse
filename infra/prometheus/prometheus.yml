@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+  - "/etc/prometheus/alert.rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "analytics-app"
+    static_configs:
+      - targets: ["tracking-api:4000"]
+      - targets: ["analytics-processor:9100"]
+      - targets: ["socket-broadcaster:5000"]
+
+# Alerting specifies settings related to alerting.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"

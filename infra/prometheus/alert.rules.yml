@@ -1,0 +1,20 @@
+groups:
+  - name: application-alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: ProcessorNotConsuming
+        expr: rate(kafka_messages_consumed_total{app="analytics-processor"}[1m]) == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Analytics processor is not consuming messages"
+          description: "The analytics-processor has not consumed any Kafka messages in the last minute."

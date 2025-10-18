@@ -15,6 +15,9 @@ module.exports = {
     host: process.env.REDIS_HOST || "localhost",
     port: 6379,
   },
-  sessionTTL: parseInt(process.env.SESSION_TTL_MS || "300000", 10),
+  mongo: {
+    uri: process.env.MONGO_URI || "mongodb://mongo:27017/analytics",
+  },
+  sessionTTL: parseInt(process.env.SESSION_TTL_MS || "10000", 10), // Using the 10-sec TTL
   aggInterval: 2000,
 };

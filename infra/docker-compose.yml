@@ -36,6 +36,31 @@ services:
     ports:
       - "6379:6379"
 
+  # --- NEW MONGO SERVICES ---
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=analytics
+
+  mongo-express:
+    image: mongo-express:1.0.0-alpha
+    container_name: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=
+      - ME_CONFIG_MONGODB_DATABASE=analytics
+    depends_on:
+      - mongo
+  # --- END MONGO SERVICES ---
+
   tracking-api:
     build:
       context: ../tracking-api
@@ -52,13 +77,17 @@ services:
     build:
       context: ../analytics-processor
     container_name: analytics-processor
+    ports:
+      - "9100:9100"
     environment:
       - KAFKA_BROKERS=kafka:9092
       - REDIS_HOST=redis
-      - SESSION_TTL_MS=300000
+      - SESSION_TTL_MS=10000 # Using 10 sec TTL
+      - MONGO_URI=mongodb://mongo:27017/analytics # <-- ADDED THIS
     depends_on:
       - kafka
       - redis
+      - mongo # <-- ADDED THIS
 
   socket-broadcaster:
     build:
@@ -81,5 +110,48 @@ services:
     environment:
       - VITE_SOCKET_URL=http://localhost:5000
 
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus-data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
+    depends_on:
+      - tracking-api
+      - analytics-processor
+      - socket-broadcaster
+
+  grafana:
+    image: grafana/grafana:10.1.5
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager/config.yml:/etc/alertmanager/config.yml
+      - alertmanager-data:/alertmanager
+    command: --config.file=/etc/alertmanager/config.yml
+
 volumes:
   kafka-data:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+  mongo-data: # <-- ADDED THIS
