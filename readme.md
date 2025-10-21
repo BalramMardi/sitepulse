@@ -98,7 +98,7 @@ Node.js (for the load testing script).
 ```
 Clone the repository:
 
-git clone [https://github.com/your-username/sitepulse.git](https://github.com/your-username/sitepulse.git)
+git clone [https://github.com/BalramMardi/sitepulse.git](https://github.com/BalramMardi/sitepulse.git)
 cd sitepulse
 
 Install npm packages for services:
